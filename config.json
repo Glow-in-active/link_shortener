@@ -1,5 +1,5 @@
 {
-  "DBType": "postgres",
+  "DBType": "redis",
   "postgres": {
     "host": "postgres",
     "port": 5432,
