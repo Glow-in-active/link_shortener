@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/redis/go-redis/v9"
-	"link_shortener/internal/storage"
+	"link_shortener/internal/service"
 )
 
 func main() {
@@ -15,10 +15,12 @@ func main() {
 	var (
 		shortUrl string
 		longurl  string
+		sns      string
 	)
 
-	fmt.Scan(&shortUrl)
-	longurl, _ = storage.RedisGetData(rdb, shortUrl)
-	fmt.Println(longurl)
+	fmt.Scan(&longurl)
+	shortUrl, _ = service.SaveURLRedis(rdb, longurl)
 
+	sns, _ = service.GetLongURLRedis(rdb, shortUrl)
+	fmt.Println(shortUrl, sns)
 }
