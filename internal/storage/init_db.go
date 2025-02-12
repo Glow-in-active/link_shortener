@@ -20,7 +20,7 @@ func InitDatabase(dbType string) (*Database, error) {
 
 	switch dbType {
 	case "postgres":
-		connStr := "postgres://admin:secret@localhost:5432/mydb?sslmode=disable"
+		connStr := "postgres://admin:secret@postgres:5432/url_shortener?sslmode=disable"
 		pgDB, err := sql.Open("postgres", connStr)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка подключения к Postgres: %w", err)
@@ -29,7 +29,7 @@ func InitDatabase(dbType string) (*Database, error) {
 
 	case "redis":
 		db.Redis = redis.NewClient(&redis.Options{
-			Addr:     "localhost:6379",
+			Addr:     "redis:6379",
 			Password: "",
 			DB:       0,
 		})
@@ -45,5 +45,8 @@ func InitDatabase(dbType string) (*Database, error) {
 func (db *Database) Close() {
 	if db.Postgres != nil {
 		db.Postgres.Close()
+	}
+	if db.Redis != nil {
+		db.Redis.Close()
 	}
 }

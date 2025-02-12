@@ -1,27 +1,37 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
+	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"link_shortener/internal/httpp"
 	"link_shortener/internal/storage"
 	"log"
 	"os"
-	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
+type Config struct {
+	Database string
+}
+
 func main() {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Выберите базу данных (postgres/redis, по умолчанию redis):")
-	choice, _ := reader.ReadString('\n')
-	choice = strings.TrimSpace(choice)
-	if choice == "" {
-		choice = "redis"
+	configFile, err := os.Open("/app/config.json")
+	if err != nil {
+		log.Fatal("Ошибка открытия конфигурационного файла:", err)
+	}
+	defer configFile.Close()
+
+	var config Config
+	decoder := json.NewDecoder(configFile)
+	err = decoder.Decode(&config)
+	if err != nil {
+		log.Fatal("Ошибка при чтении конфигурационного файла:", err)
 	}
 
-	database, err := storage.InitDatabase(choice)
+	if config.Database == "" {
+		config.Database = "redis"
+	}
+
+	database, err := storage.InitDatabase(config.Database)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,6 +40,6 @@ func main() {
 	router := gin.Default()
 	httpp.SetupRoutes(router, database)
 
-	log.Println("Сервер запущен на :8080, использует", choice)
+	log.Println("Сервер запущен на :8080, использует", config.Database)
 	router.Run(":8080")
 }
