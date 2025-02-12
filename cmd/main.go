@@ -1,26 +1,35 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"github.com/redis/go-redis/v9"
-	"link_shortener/internal/service"
+	"link_shortener/internal/httpp"
+	"link_shortener/internal/storage"
+	"log"
+	"os"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
-	var (
-		shortUrl string
-		longurl  string
-		sns      string
-	)
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Выберите базу данных (postgres/redis, по умолчанию redis):")
+	choice, _ := reader.ReadString('\n')
+	choice = strings.TrimSpace(choice)
+	if choice == "" {
+		choice = "redis"
+	}
 
-	fmt.Scan(&longurl)
-	shortUrl, _ = service.SaveURLRedis(rdb, longurl)
+	database, err := storage.InitDatabase(choice)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer database.Close()
 
-	sns, _ = service.GetLongURLRedis(rdb, shortUrl)
-	fmt.Println(shortUrl, sns)
+	router := gin.Default()
+	httpp.SetupRoutes(router, database)
+
+	log.Println("Сервер запущен на :8080, использует", choice)
+	router.Run(":8080")
 }
