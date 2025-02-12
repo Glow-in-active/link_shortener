@@ -3,32 +3,30 @@ package storage
 import (
 	"database/sql"
 	"fmt"
-	"log"
 )
 
-func AddData(db *sql.DB, shortUrl, longUrl string) {
+func AddData(db *sql.DB, shortUrl, longUrl string) error {
 	_, err := db.Exec("INSERT INTO data (short_url, long_url) VALUES ($1, $2)", shortUrl, longUrl)
 	if err != nil {
-		log.Fatal("Ошибка при добавлении данных: ", err)
+		return fmt.Errorf("ошибка при добавлении данных: %w", err)
 	}
-	fmt.Println("Данные успешно добавлены!")
+	return nil
 }
 
-func GetData(db *sql.DB) ([]string, error) {
-	rows, err := db.Query("SELECT id, short_url, long_url FROM data")
+func GetData(db *sql.DB, shortUrl string) ([]string, error) {
+	rows, err := db.Query("SELECT long_url FROM data WHERE short_url = $1", shortUrl)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ошибка при запросе данных: %w", err)
 	}
 	defer rows.Close()
 
 	var result []string
 	for rows.Next() {
-		var id string
-		var shortUrl, longUrl string
-		if err := rows.Scan(&id, &shortUrl, &longUrl); err != nil {
-			return nil, err
+		var longUrl string
+		if err := rows.Scan(&longUrl); err != nil {
+			return nil, fmt.Errorf("ошибка при чтении данных: %w", err)
 		}
-		result = append(result, fmt.Sprintf("ID: %s, Short URL: %s, Long URL: %s", id, shortUrl, longUrl))
+		result = append(result, longUrl)
 	}
 	return result, nil
 }

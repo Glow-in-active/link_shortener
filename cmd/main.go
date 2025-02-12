@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
-	"link_shortener/internal/generator"
-	"link_shortener/internal/storage"
+
+	"link_shortener/internal/service"
+
 	"log"
 )
 
@@ -16,14 +17,11 @@ func main() {
 		log.Fatal("Ошибка подключения к базе данных: ", err)
 	}
 	var url string
-	fmt.Scan(&url)
-	shortURL := generator.GenerateShortURL(url)
-
-	storage.AddData(db, shortURL, url)
-	data, err := storage.GetData(db)
-	if err != nil {
-		log.Fatal("Ошибка при извлечении данных: ", err)
-	}
-	fmt.Println("Данные из таблицы:", data)
-
+	var short string
+	var long_url string
+	url = "github.io"
+	short, err = service.SaveURL(db, url)
+	long_url, err = service.GetLongURL(db, short)
+	fmt.Println(short)
+	fmt.Println(long_url)
 }
