@@ -15,12 +15,26 @@ type Database struct {
 	Type     string
 }
 
-func InitDatabase(dbType string) (*Database, error) {
+func InitDatabase(dbType string, config interface{}) (*Database, error) {
+	if dbType == "" {
+		return nil, fmt.Errorf("db_type не указан в конфиге")
+	}
+
+	cfg, ok := config.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("неверный тип конфигурации")
+	}
+
 	db := &Database{Type: dbType}
 
 	switch dbType {
 	case "postgres":
-		connStr := "postgres://admin:secret@postgres:5432/url_shortener?sslmode=disable"
+		// Используем cfg.Postgres для доступа к конфигурации PostgreSQL
+		connStr := fmt.Sprintf(
+			"postgres://%s:%s@%s:%d/%s?sslmode=%s",
+			cfg.Postgres.User, cfg.Postgres.Password, cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.DBName, cfg.Postgres.SSLMode,
+		)
+
 		pgDB, err := sql.Open("postgres", connStr)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка подключения к Postgres: %w", err)
@@ -28,10 +42,11 @@ func InitDatabase(dbType string) (*Database, error) {
 		db.Postgres = pgDB
 
 	case "redis":
+		// Используем cfg.Redis для доступа к конфигурации Redis
 		db.Redis = redis.NewClient(&redis.Options{
-			Addr:     "redis:6379",
-			Password: "",
-			DB:       0,
+			Addr:     fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port),
+			Password: cfg.Redis.Password,
+			DB:       cfg.Redis.DB,
 		})
 
 	default:
@@ -42,11 +57,26 @@ func InitDatabase(dbType string) (*Database, error) {
 	return db, nil
 }
 
-func (db *Database) Close() {
+func (db *Database) Close() error {
+	var err error
+
 	if db.Postgres != nil {
-		db.Postgres.Close()
+		if closeErr := db.Postgres.Close(); closeErr != nil {
+			err = fmt.Errorf("ошибка закрытия Postgres: %w", closeErr)
+		}
+		log.Println("Соединение с Postgres закрыто")
 	}
+
 	if db.Redis != nil {
-		db.Redis.Close()
+		if closeErr := db.Redis.Close(); closeErr != nil {
+			if err != nil {
+				err = fmt.Errorf("%v; ошибка закрытия Redis: %w", err, closeErr)
+			} else {
+				err = fmt.Errorf("ошибка закрытия Redis: %w", closeErr)
+			}
+		}
+		log.Println("Соединение с Redis закрыто")
 	}
+
+	return err
 }
