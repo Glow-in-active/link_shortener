@@ -1,0 +1,17 @@
+{
+  "DBType": "redis",
+  "postgres": {
+    "host": "postgres",
+    "port": 5432,
+    "user": "admin",
+    "password": "secret",
+    "dbname": "url_shortener",
+    "sslmode": "disable"
+  },
+  "redis": {
+    "host": "redis",
+    "port": 6379,
+    "password": "",
+    "db": 0
+  }
+}
