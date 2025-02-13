@@ -17,8 +17,10 @@
 # Запросы
 post: 
 localhost:8080/shorten
+
 {
     "long_url": "https://sfgdgydgdfgdfgtut.com/fdsc/fsfd"
 }
+
 get:
 http://localhost:8080/3ca521f83d
